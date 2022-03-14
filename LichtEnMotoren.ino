@@ -37,33 +37,26 @@ void loop() {
 //   Serial.println();
    for (int i = 9; i <= 13; i++) {
     Serial.print(!digitalRead(i) ? "*" : "-");
-      if (!digitalRead(10)) {
-         digitalWrite(M1,HIGH);
-         digitalWrite(M2, HIGH);
-         analogWrite(E1, 60);   //PWM Speed Control
-         analogWrite(E2, 0);
+      if (!digitalRead(11)) {
+        driveMotor(60,60);
       } else if (!digitalRead(12)) {
-        digitalWrite(M1,HIGH);
-        digitalWrite(M2, HIGH);
-        analogWrite(E1, 0);   //PWM Speed Control
-        analogWrite(E2, 60);
-      } else if (!digitalRead(11)) {
-        digitalWrite(M1,HIGH);
-        digitalWrite(M2, HIGH);
-        analogWrite(E1, 60);   //PWM Speed Control
-        analogWrite(E2, 60);
+        driveMotor(0,60);
+      } else if (!digitalRead(10)) {
+        driveMotor(60,0); 
       } else {
-        digitalWrite(M1,HIGH);
-        digitalWrite(M2, HIGH);
-        analogWrite(E1, 0);   //PWM Speed Control
-        analogWrite(E2, 0);
+        driveMotor(0,0);
       }
     }
    Serial.println();
 //   delay(500);
 }
 
-
+void driveMotor(int Motor1, int Motor2) {
+  digitalWrite(M1,HIGH);
+  digitalWrite(M2, HIGH);
+  analogWrite(E1, Motor1);   //PWM Speed Control
+  analogWrite(E2, Motor2);
+}
 
 long microsecondsToCentimeters(long microseconds) {
    return microseconds / 29 / 2;
