@@ -45,7 +45,8 @@ void LineSensor::invert(bool invert) {
 }
 
 bool LineSensor::hasLine() {
-  return _invert ? (det_ll || det_lm || det_mm || det_mr || det_rr) : !(det_ll && det_lm && det_mm && det_mr && det_rr);
+//  return _invert ? (det_ll || det_lm || det_mm || det_mr || det_rr) : !(det_ll && det_lm && det_mm && det_mr && det_rr);
+  return (det_ll || det_lm || det_mm || det_mr || det_rr);
 }
 
 bool LineSensor::readLL() {
