@@ -2,8 +2,9 @@
 #include "Ultrasonic.h"
 #include "MotorDriver.h"
 #include "BCD.h"
+#include "Algorithm.h"
 
-#define DEBUG
+//#define DEBUG
 
 #define pin_linesensor_ll   9
 #define pin_linesensor_lm   10
@@ -26,10 +27,12 @@ MotorDriverPWM motorDriver = MotorDriverPWM(pin_motor_e1, pin_motor_m1, pin_moto
 //MotorDriverPLL motorDriver = MotorDriverPLL(pin_motor_m1, pin_motor_e1, pin_motor_m2, pin_motor_e2);
 BCD bcd = BCD(pin_bcd_data, pin_bcd_latch, pin_bcd_clock);
 
+Algorithm algo = Algorithm();
+
 void setup() {
-#ifdef DEBUG
+//#ifdef DEBUG
   Serial.begin(115200);
-#endif
+//#endif
 
   lineSensor.setup();
   lineSensor.invert(false);
@@ -38,42 +41,77 @@ void setup() {
 
   motorDriver.setup();
   bcd.setup();
+
+  algo.setup();
+  
   bcd.write("--");
   //  motorDriver.flipLeftMotorDirection();
   //  motorDriver.flipRightMotorDirection();
 
-  // TODO: Remove this, split 5v instead
-  pinMode(8, OUTPUT);
-  digitalWrite(8, HIGH);
+  delay(1000);
 
 }
 
 void loop() {
   lineSensor.update();
+  ultrasonic.update();
+
+  algo.setLineData(lineSensor.hasLine(), lineSensor.readLL(), lineSensor.readLM(), lineSensor.readMM(), lineSensor.readMR(), lineSensor.readRR());
+  algo.setDistanceCM(ultrasonic.distance_cm());
+  algo.update();
+
+  if (!algo.stopMotors()) {
+    motorDriver.setLeftSpeed(algo.getLeftMotorSpeed());
+    motorDriver.setRightSpeed(algo.getRightMotorSpeed());
+  } else {
+    motorDriver.stop();
+  }
+
+  bcd.write(algo.getStatusCode());
+
+  //  // ============== TEST DISPLAYS ==============
+  //
+  //  bcd.write("88");
+  //  delay(500);
+  //  bcd.write("--");
+  //  delay(500);
+  //  bcd.write("__");
+  //  delay(500);
+  //
+  //  for (int i = 0; i < 10; i++) {
+  //    bcd.write(String(i) + String(i));
+  //    delay(250);
+  //  }
+  //  delay(1000);
+  //  bcd.write("  ");
+  //  delay(500);
+
+  // ============== TEST DISPLAYS ==============
+
   //  ultrasonic.update();
 
-  // ============== TEST MOTORS ==============
-  delay(1000);
-
-  for (int i = 255; i > 0; i--) {
-    motorDriver.setLeftSpeed(i);
-    motorDriver.setRightSpeed(i);
-    delay(20);
-  }
-
-  motorDriver.stop();
-  delay(2000);
-
-  for (int i = -255; i < 0; i++) {
-    motorDriver.setLeftSpeed(i);
-    motorDriver.setRightSpeed(i);
-    delay(20);
-  }
-
-  motorDriver.stop();
-  delay(200000);
-
-  // ============== TEST MOTORS ==============
+  //  // ============== TEST MOTORS ==============
+  //  delay(1000);
+  //
+  //  for (int i = 255; i > 0; i--) {
+  //    motorDriver.setLeftSpeed(i);
+  //    motorDriver.setRightSpeed(i);
+  //    delay(20);
+  //  }
+  //
+  //  motorDriver.stop();
+  //  delay(2000);
+  //
+  //  for (int i = -255; i < 0; i++) {
+  //    motorDriver.setLeftSpeed(i);
+  //    motorDriver.setRightSpeed(i);
+  //    delay(20);
+  //  }
+  //
+  //  motorDriver.stop();
+  //  delay(200000);
+  //
+  //  // ============== TEST MOTORS ==============
 
 #ifdef DEBUG
   Serial.print(lineSensor.hasLine());
