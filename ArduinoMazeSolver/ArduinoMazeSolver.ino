@@ -30,9 +30,9 @@ BCD bcd = BCD(pin_bcd_data, pin_bcd_latch, pin_bcd_clock);
 Algorithm algo = Algorithm();
 
 void setup() {
-//#ifdef DEBUG
+  //#ifdef DEBUG
   Serial.begin(115200);
-//#endif
+  //#endif
 
   lineSensor.setup();
   lineSensor.invert(false);
@@ -43,7 +43,7 @@ void setup() {
   bcd.setup();
 
   algo.setup();
-  
+
   bcd.write("--");
   //  motorDriver.flipLeftMotorDirection();
   //  motorDriver.flipRightMotorDirection();
@@ -68,50 +68,6 @@ void loop() {
   }
 
   bcd.write(algo.getStatusCode());
-
-  //  // ============== TEST DISPLAYS ==============
-  //
-  //  bcd.write("88");
-  //  delay(500);
-  //  bcd.write("--");
-  //  delay(500);
-  //  bcd.write("__");
-  //  delay(500);
-  //
-  //  for (int i = 0; i < 10; i++) {
-  //    bcd.write(String(i) + String(i));
-  //    delay(250);
-  //  }
-  //  delay(1000);
-  //  bcd.write("  ");
-  //  delay(500);
-
-  // ============== TEST DISPLAYS ==============
-
-  //  ultrasonic.update();
-
-  //  // ============== TEST MOTORS ==============
-  //  delay(1000);
-  //
-  //  for (int i = 255; i > 0; i--) {
-  //    motorDriver.setLeftSpeed(i);
-  //    motorDriver.setRightSpeed(i);
-  //    delay(20);
-  //  }
-  //
-  //  motorDriver.stop();
-  //  delay(2000);
-  //
-  //  for (int i = -255; i < 0; i++) {
-  //    motorDriver.setLeftSpeed(i);
-  //    motorDriver.setRightSpeed(i);
-  //    delay(20);
-  //  }
-  //
-  //  motorDriver.stop();
-  //  delay(200000);
-  //
-  //  // ============== TEST MOTORS ==============
 
 #ifdef DEBUG
   Serial.print(lineSensor.hasLine());
