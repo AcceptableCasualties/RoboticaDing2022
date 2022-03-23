@@ -1,13 +1,5 @@
 #include "Ultrasonic.h"
 
-/*
- * ========== TODO ==========
- * Fix distance calculation in [void Ultrasonic::echo_in()]
- * Is ISR the right choice?
- * pulseIn is slow
- * ========== TODO ==========
- */
- 
 Ultrasonic::Ultrasonic(int pin_echo, int pin_trig) {
   _pin_echo = pin_echo;
   _pin_trig = pin_trig;
@@ -37,9 +29,10 @@ void Ultrasonic::echo_in() {
   if (!_wait) return;
   _state = _state == 1 ? 0 : 1;
   if (_state == 1) {
-     return;
+    return;
   }
-  _distance_cm = (micros() - _last_micros) / 29 / 4;
+  float difference = (micros() - _last_micros);
+  _distance_cm = difference / (BASE_MULTIPLIER + (US_AT_30CM - difference < 0 ? 0 : US_AT_30CM - difference) / 20);
   _wait = false;
 }
 
@@ -49,6 +42,6 @@ void _echo_in() {
   Ultrasonic::_instance->echo_in();
 }
 
-int Ultrasonic::distance_cm() {
+float Ultrasonic::distance_cm() {
   return _distance_cm;
 }
