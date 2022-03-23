@@ -43,8 +43,10 @@
 #define DISP_8 B11111110
 #define DISP_9 B11100110
 
-#define DISP_DASH B00000010
-#define DISP_NULL B00000000
+#define DISP_DASH       B00000010
+#define DISP_UNDERSCORE B00010000
+#define DISP_DOT        B00000001
+#define DISP_NULL       B00000000
 
 class BCD {
   public:

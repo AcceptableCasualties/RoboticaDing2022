@@ -19,8 +19,10 @@ void BCD::write(String text) {
   }
   text.toLowerCase();
 
+  digitalWrite(_pin_latch, LOW);
   this->_push_byte(this->_char_to_bcd(text[1]));
   this->_push_byte(this->_char_to_bcd(text[0]));
+  digitalWrite(_pin_latch, HIGH);
 }
 
 int BCD::_char_to_bcd(char character) {
@@ -99,13 +101,15 @@ int BCD::_char_to_bcd(char character) {
       return DISP_9;
     case '-':
       return DISP_DASH;
+    case '_':
+      return DISP_UNDERSCORE;
+    case '.':
+      return DISP_DOT;
     default:
       return DISP_NULL;
   }
 }
 
 void BCD::_push_byte(int character) {
-  digitalWrite(_pin_latch, LOW);
   shiftOut(_pin_data, _pin_clock, LSBFIRST, character);
-  digitalWrite(_pin_latch, HIGH);
 }
