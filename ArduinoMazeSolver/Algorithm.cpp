@@ -14,18 +14,18 @@ void Algorithm::setup() {
 }
 
 void Algorithm::update() {
-  //  if (_state == STATE_STOPPED) {
-  //    Serial.println("STATE_STOPPED");
-  //  }
-  //  if (_state == STATE_FOLLOWING_LINE) {
-  //    Serial.println("STATE_FOLLOWING_LINE");
-  //  }
+  if (_state == STATE_STOPPED) {
+    Serial.println("STATE_STOPPED");
+  }
+  if (_state == STATE_FOLLOWING_LINE) {
+    Serial.println("STATE_FOLLOWING_LINE");
+  }
   if (_state == STATE_NO_LINE) {
     Serial.println("STATE_NO_LINE");
   }
-//  if (_state == STATE_CONT_LINE) {
-//    Serial.println("STATE_CONT_LINE");
-//  }
+  if (_state == STATE_CONT_LINE) {
+    Serial.println("STATE_CONT_LINE");
+  }
   if (_state == STATE_ROTATE_180) {
     Serial.println("STATE_ROTATE_180");
   }
@@ -52,58 +52,55 @@ void Algorithm::update() {
     return;
   }
 
-  if (_state == STATE_STOPPED) {
-    _motor_left_speed = 0;
-    _motor_right_speed = 0;
-  }
+  updateState();
+  switch (_state) {
+    case STATE_STOPPED:
+      _motor_left_speed = 0;
+      _motor_right_speed = 0;
+      break;
 
-  if (!handleTurning()) {
-    if (!handleOffsetMovement()) {
-      if (updateState()) {
-        if (_measured_distance_cm < TURN_OBJECT_DISTANCE_CM) {
-          _state = STATE_ROTATE_180;
-        }
+    case STATE_FOLLOWING_LINE:
+      _motor_left_speed = _line_lm ? MOTOR_DRIVE_SPEED / 2 + MOTOR_DRIVE_SPEED / 3 : MOTOR_DRIVE_SPEED;
+      _motor_right_speed = _line_mr ? MOTOR_DRIVE_SPEED / 2 + MOTOR_DRIVE_SPEED / 3 : MOTOR_DRIVE_SPEED;
+      break;
 
-        if (_state == STATE_NO_LINE) {
-          _state = STATE_ROTATE_180;
-        }
+    case STATE_NO_LINE:
+      _state = STATE_LEFT_TURN;
+      break;
 
-        if (_state == STATE_LEFT_TURN) {
-          _state = STATE_STOPPED;
-          _is_turning_left = true;
-        }
+    case STATE_CONT_LINE:
+      _state = STATE_LEFT_TURN;
+      break;
 
-        if (_state == STATE_RIGHT_TURN) {
-          _state = STATE_STOPPED;
-          _is_turning_right = true;
-        }
+    case STATE_ROTATE_180:
+      _state = STATE_LEFT_TURN;
+      break;
 
-        if (_state == STATE_ROTATE_180) {
-          _state = STATE_STOPPED;
-          _is_turning_180 = true;
-          _is_turning_left = true;
-        }
+    case STATE_POS_LINE:
+      break;
 
-        if (_state == STATE_FOLLOWING_LINE) {
-          if (_line_mm || _line_lm || _line_mr) {
-            if (!_line_lm && !_line_mr) {
-              _motor_left_speed = MOTOR_DRIVE_SPEED;
-              _motor_right_speed = MOTOR_DRIVE_SPEED;
-            } else {
-              if ((_line_lm && !_line_ll)) {
-                _motor_left_speed = MOTOR_DRIVE_SPEED / 2 + MOTOR_DRIVE_SPEED / 3;
-                _motor_right_speed = MOTOR_DRIVE_SPEED;
-              }
-
-              if ((_line_mr && !_line_rr)) {
-                _motor_left_speed = MOTOR_DRIVE_SPEED;
-                _motor_right_speed = MOTOR_DRIVE_SPEED / 2 + MOTOR_DRIVE_SPEED / 3;
-              }
-            }
-          }
-        }
+    case STATE_RIGHT_TURN:
+      if (!_line_mm) _turn_right_lost_line = true;
+      if (_turn_right_lost_line && _line_mm) {
+        _state = STATE_STOPPED;
+        _turn_right_lost_line = false;
       }
-    }
+      
+      _motor_left_speed = MOTOR_DRIVE_SPEED;
+      _motor_right_speed = -MOTOR_DRIVE_SPEED;
+      break;
+
+    case STATE_LEFT_TURN:
+      if (!_line_mm) _turn_left_lost_line = true;
+      if (_turn_left_lost_line && _line_mm) {
+        _state = STATE_STOPPED;
+        _turn_left_lost_line = false;
+      }
+      
+      _motor_left_speed = -MOTOR_DRIVE_SPEED;
+      _motor_right_speed = MOTOR_DRIVE_SPEED;
+      break;
+
   }
 
   _last_line_found = _line_found;
@@ -114,94 +111,24 @@ void Algorithm::update() {
   _last_line_rr = _line_rr;
 }
 
-bool Algorithm::handleTurning() {
-  if (!_is_turning_left && !_is_turning_right) {
-    _last_turn_timer_micros = micros();
-    _turn_180_count = 0;
-  }
-
-  if (_is_turning_left) {
-    if (_turn_left_lost_line && _line_lm && !_last_line_lm) {
-      _is_turning_left = _is_turning_180 ? (_turn_180_count >= 1 || micros() - _last_turn_timer_micros > 1500000 ? false : true) : false;
-      _turn_180_count += 1;
-      _turn_left_lost_line = false;
-      _motor_left_speed = 0;
-      _motor_right_speed = 0;
-      _last_turn_direction = "L";
-      return false;
-    }
-
-    if (!_turn_left_lost_line && !_line_lm) {
-      _turn_left_lost_line = true;
-    }
-
-    _motor_left_speed = _line_lm ? -MOTOR_DRIVE_SPEED / 2 : -MOTOR_DRIVE_SPEED;
-    _motor_right_speed = _line_lm ? MOTOR_DRIVE_SPEED / 2 : MOTOR_DRIVE_SPEED;
-  }
-
-  if (_is_turning_right) {
-    if (_turn_right_lost_line && _line_mr && !_last_line_mr) {
-      _is_turning_right = _is_turning_180 ? (_turn_180_count >= 1 || micros() - _last_turn_timer_micros > 1500000 ? false : true) : false;
-      _turn_180_count += 1;
-      _turn_right_lost_line = false;
-      _motor_left_speed = 0;
-      _motor_right_speed = 0;
-      _last_turn_direction = "R";
-      return false;
-    }
-
-    if (!_turn_right_lost_line && !_line_mr) {
-      _turn_right_lost_line = true;
-    }
-
-    _motor_left_speed = MOTOR_DRIVE_SPEED;
-    _motor_right_speed = -MOTOR_DRIVE_SPEED;
-  }
-
-  return _is_turning_left || _is_turning_right;
-}
-
-bool Algorithm::handleOffsetMovement() {
-  if ((!_is_moving_bit_forward && !_is_moving_bit_back) || _last_bit_movement_timer_micros == 0) {
-    _last_bit_movement_timer_micros = micros();
-  }
-
-  if (micros() - _last_bit_movement_timer_micros > 180000 || (!_is_moving_bit_forward && !_is_moving_bit_back)) {
-    _is_moving_bit_forward = false;
-    _is_moving_bit_back = false;
-    _motor_left_speed = 0;
-    _motor_right_speed = 0;
-
-    if (_state == STATE_CONT_LINE) {
-      _has_reached_finish = true;
-    }
-
-    if (_state == STATE_NO_LINE) {
-      _state = STATE_ROTATE_180;
-    }
-
-    //    if (_state == STATE_FOLLOWING_LINE) {}
-
-  } else {
-    _motor_left_speed = _is_moving_bit_forward ? MOTOR_DRIVE_SPEED : -MOTOR_DRIVE_SPEED;
-    _motor_right_speed = _is_moving_bit_forward ? MOTOR_DRIVE_SPEED : -MOTOR_DRIVE_SPEED;
-  }
-
-  return _is_moving_bit_forward || _is_moving_bit_back;
-}
-
 bool Algorithm::updateState() {
+  if (_state == STATE_LEFT_TURN || _state == STATE_RIGHT_TURN) {
+    return false;
+  }
+  
   if (_line_ll && _line_rr) {
     _state = STATE_CONT_LINE;
 
   } else if (_line_ll) {
     _is_moving_bit_forward = true;
     _state = STATE_LEFT_TURN;
+    delay(150);
     return false;
 
   } else if (_line_rr) {
     _is_moving_bit_forward = true;
     _state = STATE_RIGHT_TURN;
+    delay(150);
     return false;
 
   } else if (!_line_found) {
