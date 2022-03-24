@@ -5,7 +5,7 @@
    Dual 7 segment display interface to display up to two characters at once using shift-registers
 */
 
-#define DISP_A B11111011
+#define DISP_A B11101110
 #define DISP_B B00111111
 #define DISP_C B00011011
 #define DISP_D B01111011

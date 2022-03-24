@@ -4,7 +4,7 @@
 #include "BCD.h"
 #include "Algorithm.h"
 
-//#define DEBUG
+#define DEBUG
 
 #define pin_linesensor_ll   9
 #define pin_linesensor_lm   10
@@ -28,6 +28,8 @@ MotorDriverPWM motorDriver = MotorDriverPWM(pin_motor_e1, pin_motor_m1, pin_moto
 BCD bcd = BCD(pin_bcd_data, pin_bcd_latch, pin_bcd_clock);
 
 Algorithm algo = Algorithm();
+String LineSensors;
+bool busy;
 
 void setup() {
   //#ifdef DEBUG
@@ -56,30 +58,88 @@ void loop() {
   lineSensor.update();
   ultrasonic.update();
 
-  algo.setLineData(lineSensor.hasLine(), lineSensor.readLL(), lineSensor.readLM(), lineSensor.readMM(), lineSensor.readMR(), lineSensor.readRR());
-  algo.setDistanceCM(ultrasonic.distance_cm());
-  algo.update();
+  LineSensors = lineSensor.toString();
+  Serial.println(LineSensors);
 
-  if (!algo.stopMotors()) {
-    motorDriver.setLeftSpeed(algo.getLeftMotorSpeed());
-    motorDriver.setRightSpeed(algo.getRightMotorSpeed());
-  } else {
-    motorDriver.stop();
-  }
+  
+//  if (busy == false) {bcd.write("--");}
+//  busy = false;
+//  // LineSensors[1] == '1';
+//  if (LineSensors == "00100") {
+//    motorDriver.setRightSpeed(255);
+//    motorDriver.setLeftSpeed(255);
+//    bcd.write("A1");
+//    busy = true;
+//  } else if (LineSensors == "01100" || LineSensors == "01000") {
+//    bcd.write("C1");
+//    while (true) {
+//      lineSensor.update();
+//      LineSensors = lineSensor.toString();
+//      motorDriver.setRightSpeed(255);
+//      motorDriver.setLeftSpeed(0);
+//      if (!(LineSensors == "01100" || LineSensors == "01000")) {
+//        motorDriver.setRightSpeed(0);
+//        motorDriver.setLeftSpeed(0);
+//        break;
+//      }
+//    }
+//  } else if (LineSensors == "00110" || LineSensors == "00010") {
+//    bcd.write("C2");
+//    while (true) {
+//      lineSensor.update();
+//      LineSensors = lineSensor.toString();
+//      motorDriver.setRightSpeed(0);
+//      motorDriver.setLeftSpeed(255);
+//      if (!(LineSensors == "00110" || LineSensors == "00010")) {
+//        motorDriver.setRightSpeed(0);
+//        motorDriver.setLeftSpeed(0);
+//        break;
+//      }
+//    }
+//  } else if (LineSensors == "00111") {
+//     bcd.write("T2");
+//    while (true) {
+//      lineSensor.update();
+//      LineSensors = lineSensor.toString();
+//      motorDriver.setRightSpeed(0);
+//      motorDriver.setLeftSpeed(255);
+//      if (LineSensors == "00100") {
+//        motorDriver.setRightSpeed(0);
+//        motorDriver.setLeftSpeed(0);
+//        break;
+//      }
+//    }
+//  } else if (LineSensors == "11100") {
+//    bcd.write("T1");
+//    while (true) {
+//      lineSensor.update();
+//      LineSensors = lineSensor.toString();
+//      motorDriver.setRightSpeed(255);
+//      motorDriver.setLeftSpeed(0);
+//      if (LineSensors == "00100") {
+//        motorDriver.setRightSpeed(0);
+//        motorDriver.setLeftSpeed(0);
+//        break;
+//      }
+//    }
+//  } else {
+//    motorDriver.setRightSpeed(0);
+//    motorDriver.setLeftSpeed(0);
+//    bcd.write("E0");
+//    busy = true;
+//  }
 
-  bcd.write(algo.getStatusCode());
-
-#ifdef DEBUG
-  Serial.print(lineSensor.hasLine());
-  Serial.print("\t");
-  Serial.print(lineSensor.toString());
-  Serial.print("\t");
-  Serial.print(lineSensor.toPrettyString());
-
-  Serial.print("\t");
-  Serial.print(ultrasonic.distance_cm());
-  Serial.print("cm");
-
-  Serial.println();
-#endif
+  //#ifdef DEBUG
+  //  Serial.print(lineSensor.hasLine());
+  //  Serial.print("\t");
+  //  Serial.print(lineSensor.toString());
+  //  Serial.print("\t");
+  //  Serial.print(lineSensor.toPrettyString());
+  //
+  //  Serial.print("\t");
+  //  Serial.print(ultrasonic.distance_cm());
+  //  Serial.print("cm");
+  //
+  //  Serial.println();
+  //#endif
 }
