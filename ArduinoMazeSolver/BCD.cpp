@@ -14,8 +14,10 @@ void BCD::setup() {
 
 void BCD::write(String text) {
   if (text.length() != 2) {
+    digitalWrite(_pin_latch, LOW);
     this->_push_byte(DISP_DASH);
     this->_push_byte(DISP_DASH);
+    digitalWrite(_pin_latch, HIGH);
   }
   text.toLowerCase();
 

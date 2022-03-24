@@ -30,6 +30,7 @@ BCD bcd = BCD(pin_bcd_data, pin_bcd_latch, pin_bcd_clock);
 Algorithm algo = Algorithm();
 String LineSensors;
 bool busy;
+bool probed;
 
 void setup() {
   //#ifdef DEBUG
@@ -61,9 +62,43 @@ void loop() {
   LineSensors = lineSensor.toString();
   Serial.println(LineSensors);
 
-  
-//  if (busy == false) {bcd.write("--");}
-//  busy = false;
+  if (busy == false) {bcd.write("--");}
+  busy = false;
+
+  if (LineSensors == "11111" && probed == false) {
+    Serial.println("Beginning scouting delay.");
+    int count = 0;
+    String writ;
+    while (true) {
+      writ = 0 + String(count);
+      bcd.write(writ);
+      motorDriver.setRightSpeed(255);
+      motorDriver.setLeftSpeed(255);
+      delay(200);
+      motorDriver.setRightSpeed(0);
+      motorDriver.setLeftSpeed(0);
+      count++;
+      
+      lineSensor.update();
+      LineSensors = lineSensor.toString();
+
+      if (LineSensors == "00000") {
+        while (count>0) {
+          writ = 0 + String(count);
+          bcd.write(writ);
+          motorDriver.setRightSpeed(-255);
+          motorDriver.setLeftSpeed(-255);
+          delay(200);
+          motorDriver.setRightSpeed(0);
+          motorDriver.setLeftSpeed(0);
+          count--;
+          delay(500);
+        }
+        
+      }  probed = true;
+     delay(500);
+  }
+  }
 //  // LineSensors[1] == '1';
 //  if (LineSensors == "00100") {
 //    motorDriver.setRightSpeed(255);
