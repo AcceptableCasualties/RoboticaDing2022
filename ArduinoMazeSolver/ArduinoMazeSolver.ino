@@ -63,106 +63,99 @@ void loop() {
   Serial.println(LineSensors);
 
   if (busy == false) {bcd.write("--");}
-  busy = false;
-
-  if (LineSensors == "11111" && probed == false) {
-    Serial.println("Beginning scouting delay.");
-    int count = 0;
-    String writ;
+  busy = false; 
+  
+  // LineSensors[1] == '1';
+  if (LineSensors == "00100") {
+    motorDriver.setRightSpeed(70);
+    motorDriver.setLeftSpeed(70);
+    bcd.write("A1");
+    busy = true;
+  } else if (LineSensors == "01100" || LineSensors == "01000") {
+    bcd.write("C1");
     while (true) {
-      writ = 0 + String(count);
-      bcd.write(writ);
-      motorDriver.setRightSpeed(255);
-      motorDriver.setLeftSpeed(255);
-      delay(200);
-      motorDriver.setRightSpeed(0);
-      motorDriver.setLeftSpeed(0);
-      count++;
-      
       lineSensor.update();
       LineSensors = lineSensor.toString();
+      motorDriver.setRightSpeed(70);
+      motorDriver.setLeftSpeed(0);
+      if (!(LineSensors == "01100" || LineSensors == "01000")) {
+        motorDriver.setRightSpeed(0);
+        motorDriver.setLeftSpeed(0);
+        break;
+      }
+    }
+  } else if (LineSensors == "00110" || LineSensors == "00010") {
+    bcd.write("C2");
+    while (true) {
+      lineSensor.update();
+      LineSensors = lineSensor.toString();
+      motorDriver.setRightSpeed(0);
+      motorDriver.setLeftSpeed(70);
+      if (!(LineSensors == "00110" || LineSensors == "00010")) {
+        motorDriver.setRightSpeed(0);
+        motorDriver.setLeftSpeed(0);
+        break;
+      }
+    }
+  } else if (LineSensors == "00111") {
+     bcd.write("T2");
+    while (true) {
+      lineSensor.update();
+      LineSensors = lineSensor.toString();
+      motorDriver.setRightSpeed(0);
+      motorDriver.setLeftSpeed(70);
+      if (LineSensors == "00100") {
+        motorDriver.setRightSpeed(0);
+        motorDriver.setLeftSpeed(0);
+        break;
+      }
+    }
+  } else if ( LineSensors == "11100") {
+    bcd.write("T1");
+    while (true) {
+      lineSensor.update();
+      LineSensors = lineSensor.toString();
+      motorDriver.setRightSpeed(70);
+      motorDriver.setLeftSpeed(0);
+      if (LineSensors == "00100") {
+        motorDriver.setRightSpeed(0);
+        motorDriver.setLeftSpeed(0);
+        break;
+      }
+    }
+  } else if ( LineSensors == "11111") {
+    bcd.write("E1");
+    while (true) {
+      lineSensor.update();
+      LineSensors = lineSensor.toString();
+      motorDriver.setRightSpeed(70);
+      motorDriver.setLeftSpeed(0);
+      if (LineSensors == "00100") {
+        motorDriver.setRightSpeed(0);
+        motorDriver.setLeftSpeed(0);
+        break;
+      }
+    }
+  } else if ( LineSensors == "00000") {
+    bcd.write("RF");
+    while (true) {
+      lineSensor.update();
+      LineSensors = lineSensor.toString();
+      motorDriver.setRightSpeed(70);
+      motorDriver.setLeftSpeed(-70);
+      if (LineSensors == "00100") {
+        motorDriver.setRightSpeed(0);
+        motorDriver.setLeftSpeed(0);
+        break;
+      }
+    }
+  } else {
+    motorDriver.setRightSpeed(0);
+    motorDriver.setLeftSpeed(0);
+    bcd.write("E0");
+    busy = true;
+  }
 
-      if (LineSensors == "00000") {
-        while (count>0) {
-          writ = 0 + String(count);
-          bcd.write(writ);
-          motorDriver.setRightSpeed(-255);
-          motorDriver.setLeftSpeed(-255);
-          delay(200);
-          motorDriver.setRightSpeed(0);
-          motorDriver.setLeftSpeed(0);
-          count--;
-          delay(500);
-        }
-        
-      }  probed = true;
-     delay(500);
-  }
-  }
-//  // LineSensors[1] == '1';
-//  if (LineSensors == "00100") {
-//    motorDriver.setRightSpeed(255);
-//    motorDriver.setLeftSpeed(255);
-//    bcd.write("A1");
-//    busy = true;
-//  } else if (LineSensors == "01100" || LineSensors == "01000") {
-//    bcd.write("C1");
-//    while (true) {
-//      lineSensor.update();
-//      LineSensors = lineSensor.toString();
-//      motorDriver.setRightSpeed(255);
-//      motorDriver.setLeftSpeed(0);
-//      if (!(LineSensors == "01100" || LineSensors == "01000")) {
-//        motorDriver.setRightSpeed(0);
-//        motorDriver.setLeftSpeed(0);
-//        break;
-//      }
-//    }
-//  } else if (LineSensors == "00110" || LineSensors == "00010") {
-//    bcd.write("C2");
-//    while (true) {
-//      lineSensor.update();
-//      LineSensors = lineSensor.toString();
-//      motorDriver.setRightSpeed(0);
-//      motorDriver.setLeftSpeed(255);
-//      if (!(LineSensors == "00110" || LineSensors == "00010")) {
-//        motorDriver.setRightSpeed(0);
-//        motorDriver.setLeftSpeed(0);
-//        break;
-//      }
-//    }
-//  } else if (LineSensors == "00111") {
-//     bcd.write("T2");
-//    while (true) {
-//      lineSensor.update();
-//      LineSensors = lineSensor.toString();
-//      motorDriver.setRightSpeed(0);
-//      motorDriver.setLeftSpeed(255);
-//      if (LineSensors == "00100") {
-//        motorDriver.setRightSpeed(0);
-//        motorDriver.setLeftSpeed(0);
-//        break;
-//      }
-//    }
-//  } else if (LineSensors == "11100") {
-//    bcd.write("T1");
-//    while (true) {
-//      lineSensor.update();
-//      LineSensors = lineSensor.toString();
-//      motorDriver.setRightSpeed(255);
-//      motorDriver.setLeftSpeed(0);
-//      if (LineSensors == "00100") {
-//        motorDriver.setRightSpeed(0);
-//        motorDriver.setLeftSpeed(0);
-//        break;
-//      }
-//    }
-//  } else {
-//    motorDriver.setRightSpeed(0);
-//    motorDriver.setLeftSpeed(0);
-//    bcd.write("E0");
-//    busy = true;
-//  }
 
   //#ifdef DEBUG
   //  Serial.print(lineSensor.hasLine());
