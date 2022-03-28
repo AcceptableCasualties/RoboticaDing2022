@@ -4,7 +4,7 @@
 #include "BCD.h"
 #include "Algorithm.h"
 
-//#define DEBUG
+#define DEBUG
 
 #define pin_linesensor_ll   9
 #define pin_linesensor_lm   10
@@ -28,6 +28,24 @@ MotorDriverPWM motorDriver = MotorDriverPWM(pin_motor_e1, pin_motor_m1, pin_moto
 BCD bcd = BCD(pin_bcd_data, pin_bcd_latch, pin_bcd_clock);
 
 Algorithm algo = Algorithm();
+String LastDifSensor;
+String LineSensors;
+bool busy;
+bool turnFound;
+unsigned long curTime;
+unsigned long delTime;
+int dist;
+int distance = 20;
+int distance2 = 20;
+int log1 = 20;
+int log2 = 20;
+int log3 = 20;
+int log4 = 20;
+
+int totalIntersectionsCrossed = 0;
+bool isAtIntersection = false;
+String lastTurnDirection = "-";
+bool hasFinished = false;
 
 void setup() {
   //#ifdef DEBUG
@@ -44,7 +62,7 @@ void setup() {
 
   algo.setup();
 
-  bcd.write("--");
+  //  bcd.write("--");
   //  motorDriver.flipLeftMotorDirection();
   //  motorDriver.flipRightMotorDirection();
 
@@ -53,33 +71,212 @@ void setup() {
 }
 
 void loop() {
+start:
   lineSensor.update();
   ultrasonic.update();
 
-  algo.setLineData(lineSensor.hasLine(), lineSensor.readLL(), lineSensor.readLM(), lineSensor.readMM(), lineSensor.readMR(), lineSensor.readRR());
-  algo.setDistanceCM(ultrasonic.distance_cm());
-  algo.update();
-
-  if (!algo.stopMotors()) {
-    motorDriver.setLeftSpeed(algo.getLeftMotorSpeed());
-    motorDriver.setRightSpeed(algo.getRightMotorSpeed());
+  if (hasFinished) {
+    bcd.write("FI");
+    return;
   } else {
-    motorDriver.stop();
+    bcd.write(String(totalIntersectionsCrossed) + lastTurnDirection);
   }
 
-  bcd.write(algo.getStatusCode());
+  distance2 = ultrasonic.distance_cm();
+  if (distance2 >= 1770) {
+    Serial.println("Val err");
+  } else {
+    log1 = distance;
+    log2 = log1;
+    log3 = log2;
+    log4 = log3;
+    distance = ultrasonic.distance_cm();
+    Serial.println(distance);
+    Serial.println(log1);
+    Serial.println(log2);
+    Serial.println(log3);
+    Serial.println(log4);
+  }
 
-#ifdef DEBUG
-  Serial.print(lineSensor.hasLine());
-  Serial.print("\t");
-  Serial.print(lineSensor.toString());
-  Serial.print("\t");
-  Serial.print(lineSensor.toPrettyString());
 
-  Serial.print("\t");
-  Serial.print(ultrasonic.distance_cm());
-  Serial.print("cm");
+  LineSensors = lineSensor.toString();
+  //Serial.println(LineSensors);
 
-  Serial.println();
-#endif
+  if (LineSensors[0] == '1' || LineSensors[4] == '1') {
+    if (!isAtIntersection) {
+      totalIntersectionsCrossed++;
+      isAtIntersection = true;
+    }
+  } else {
+    isAtIntersection = false;
+  }
+
+  if (busy == false) {
+    bcd.write("--");
+  }
+  busy = false;
+
+  if (distance <= 10) {
+    Serial.println("Val: " + (distance + log1 + log2 + log3 + log4) / 5);
+    if ((distance + log1 + log2 + log3 + log4) / 5 >= 10) {
+      busy = true;
+      simpleStop();
+      return;
+    }
+  }
+
+  if (LineSensors == "00100") {
+    motorDriver.setRightSpeed(70);
+    motorDriver.setLeftSpeed(70);
+    //    bcd.write("A1");/
+    busy = true;
+  } else if ( LineSensors == "01100" || LineSensors == "01000") {
+    motorDriver.setRightSpeed(70);
+    motorDriver.setLeftSpeed(0);
+    //    bcd.write("C1");/
+    busy = true;
+  } else if ( LineSensors == "00110" || LineSensors == "00010") {
+    motorDriver.setRightSpeed(0);
+    motorDriver.setLeftSpeed(70);
+    //    bcd.write("C2");/
+    busy = true;
+  } else if ( LineSensors == "11111") {
+tsec:
+    // Check forward.
+    motorDriver.setLeftSpeed(70);
+    motorDriver.setRightSpeed(70);
+    delTime = millis();
+    //    bcd.write("Ch");/
+    while (true) {
+      lineSensor.update();
+      LineSensors = lineSensor.toString();
+      if (LineSensors == "00100") {
+        motorDriver.setLeftSpeed(0);
+        motorDriver.setRightSpeed(0);
+        //        bcd.write("tu/");
+        delay(700);
+        turnLeft();
+        break;
+      }
+      if (LineSensors == "00000") {
+        motorDriver.setLeftSpeed(0);
+        motorDriver.setRightSpeed(0);
+        //        bcd.write("tL/");
+        delay(700);
+        turnLeft();
+        break;
+      }
+    }
+  } else if (LineSensors == "00000") {
+    //    bcd.write("E1"/);
+    delay(100);
+    motorDriver.setLeftSpeed(0);
+    motorDriver.setRightSpeed(0);
+    delay(700);
+    turnLeft();
+  } else if (LineSensors == "00111") {
+    //    bcd.write("A2");/
+    motorDriver.setLeftSpeed(70);
+    motorDriver.setRightSpeed(70);
+    busy = true;
+    delTime = millis();
+    while (true) {
+      lineSensor.update();
+      LineSensors = lineSensor.toString();
+      curTime = millis();
+      if (LineSensors == "00100" && curTime - delTime >= 250) {
+        motorDriver.setLeftSpeed(70);
+        motorDriver.setRightSpeed(70);
+        break;
+      }
+      if (LineSensors == "00000") {
+        motorDriver.setLeftSpeed(0);
+        motorDriver.setRightSpeed(0);
+        //        bcd.write("t/R");
+        delay(700);
+        turnRight();
+        break;
+      }
+      if (LineSensors == "11111") {
+        goto tsec;
+      }
+    }
+    motorDriver.setLeftSpeed(0);
+    motorDriver.setRightSpeed(0);
+    return;
+  } else {
+    //    bcd.write("E0/");
+    busy = true;
+  }
+}
+
+void turnLeft() {
+  lastTurnDirection = "L";
+  delTime = millis();
+  //  bcd.write("T1");/
+  motorDriver.setRightSpeed(70);
+  motorDriver.setLeftSpeed(-70);
+  delay(250);
+  while (true) {
+    motorDriver.setRightSpeed(70);
+    motorDriver.setLeftSpeed(-70);
+    lineSensor.update();
+    LineSensors = lineSensor.toString();
+    curTime = millis();
+    if (curTime - delTime >= 2000) {
+      bcd.write("FI");
+      hasFinished = true;
+      motorDriver.setRightSpeed(0);
+      motorDriver.setLeftSpeed(0);
+      return;//exit(0);
+    }
+    if (LineSensors == "00100") {
+      //      bcd.write("DO");/
+      motorDriver.setRightSpeed(0);
+      motorDriver.setLeftSpeed(0);
+      delay(700);
+      break;
+    }
+  }
+  return;
+}
+
+void turnRight() {
+  lastTurnDirection = "R";
+  delTime = millis();
+  //  bcd.write("T2");/
+  motorDriver.setRightSpeed(-70);
+  motorDriver.setLeftSpeed(70);
+  delay(250);
+  while (true) {
+    motorDriver.setRightSpeed(-70);
+    motorDriver.setLeftSpeed(70);
+    lineSensor.update();
+    LineSensors = lineSensor.toString();
+    curTime = millis();
+    if (curTime - delTime >= 2000) {
+      bcd.write("FI");
+      hasFinished = true;
+      motorDriver.setRightSpeed(0);
+      motorDriver.setLeftSpeed(0);
+      return;
+    }
+    if (LineSensors == "00100") {
+      //      bcd.write("DO");/
+      motorDriver.setRightSpeed(0);
+      motorDriver.setLeftSpeed(0);
+      delay(700);
+      break;
+    }
+  }
+  return;
+}
+
+void simpleStop() {
+  //  bcd.write("E2");/
+  motorDriver.setRightSpeed(0);
+  motorDriver.setLeftSpeed(0);
+  delay(750);
+  turnLeft();
+  return;
 }
